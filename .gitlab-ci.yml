@@ -1,0 +1,47 @@
+stages:
+  - build
+  - deploy
+
+# This folder is cached between builds
+# http://docs.gitlab.com/ee/ci/yaml/README.html#cache
+cache:
+  paths:
+    - node_modules/
+build:
+  stage: build
+  tags:
+    - docker
+  script:
+    # - docker login -u $DEPLOY_LOGIN -p $DEPLOY_TOKEN registry.gitlab.com
+    # - docker build -t registry.gitlab.com/1mi/v2/front_site .
+    # - docker push registry.gitlab.com/1mi/v2/front_site
+    - docker login -u $DEPLOY_LOGIN -p $DEPLOY_TOKEN $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
+    # latest
+    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:latest
+
+deploy_staging:
+  stage: deploy
+  only:
+    - master
+  tags:
+    - ansible_server
+  script:
+    - ansible-server role media --limit staging --tags deploy
+  environment:
+    name: staging
+    url: https://newizv.1mi-yandex-1.popstas.ru/
+
+deploy_production:
+  stage: deploy
+  only:
+    - master
+  tags:
+    - ansible_server
+  script:
+    - ssh -o StrictHostKeyChecking=no deployer@51.15.159.154 /data/docker/update.sh
+  environment:
+    name: bashinform
+    url: https://sandbox-ufa-bashinform.devmi.ru/
