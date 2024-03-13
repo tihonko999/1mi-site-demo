@@ -1,0 +1,10 @@
+version: "3"
+services:
+  media2_site:
+    build: .
+    # image: registry.gitlab.com/1mi/v2/front_site
+    ports:
+      - "3001:3001"
+    environment:
+      # disabling memcached when testing container localy
+      NO_CACHE: 1
